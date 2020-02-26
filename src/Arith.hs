@@ -77,9 +77,9 @@ parseNum input =
       [] -> Nothing
       xs -> Just (Num $ Sum.parseNum xs, rest)) <|> do
         (lbr, rest) <- parseLbr input
-        (t, rest') <- parseSum rest
-        (rbr, output) <- parseRbr rest'
-        return (t, output)
+        (sum, rest') <- parseSum rest
+        (rbr, rest'') <- parseRbr rest'
+        return (sum, rest'')
 
 
 parseOp :: String -> Maybe (Operator, String)
