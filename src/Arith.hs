@@ -40,13 +40,16 @@ fromPostfix input = do
                     if (length x == 1) then return (x !! 0)
                     else Nothing
 fromPostfix' :: [String] -> Maybe([AST]) -> Maybe([AST])
-fromPostfix' (x:xs) (Just a) | (isOp x) && (length a >= 2) = do
+fromPostfix' (x:xs) (Just (y:z:stack)) | (isOp x) = do
                 (op, "") <- parseOp x
-                fromPostfix' xs $ Just ((BinOp op (a !! 1) (a !! 0)):(drop 2 a))
-                 | not(isOp x) = do 
+                fromPostfix' xs $ Just $ BinOp op z y:stack
+                 | otherwise = do 
                (num, "") <- parseNum x
-               fromPostfix' xs $ Just (num:a)
-           | otherwise = Nothing
+               fromPostfix' xs $ Just (num:y:z:stack)
+fromPostfix' (x:xs) (Just stack) | (isOp x) = Nothing
+                                 | otherwise = do 
+                                            (num, "") <- parseNum x
+                                            fromPostfix' xs $ Just (num:stack)
 fromPostfix' [] a = a
 
 opsStr = ["+", "-", "*", "/"]
@@ -57,13 +60,11 @@ isOp s = elem s opsStr
 
 -- Парсит левую скобку
 parseLbr :: String -> Maybe ((), String)
-parseLbr [] = Nothing
 parseLbr ('(':xs) = Just ((), xs)
 parseLbr _ = Nothing
 
 -- Парсит правую скобку
 parseRbr :: String -> Maybe ((), String)
-parseRbr [] = Nothing
 parseRbr (')':xs) = Just ((), xs)
 parseRbr _ = Nothing
 
