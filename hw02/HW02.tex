@@ -40,30 +40,42 @@ initial text={}
    \[ (a \mid b)^+ (aa \mid bb \mid abab \mid baba)^* (a \mid b)^+\]
   Построить эквивалентные:
   \begin{enumerate}
-    \item Недетерминированный конечный автомат
+    \item Недетерминированный конечный автомат\\
+\begin{myauto}
+  \node[state,initial] (q_0) {$q_0$};
+  \node[state] (q_1) [right of=q_0] {$q_1$};
+  \node[state] (q_2) [right of=q_1] {$q_2$};
+  \node[state] (q_9) [right of=q_2] {$q_9$};
+  \node[state] (q_3) [above of=q_1] {$q_3$};
+  \node[state] (q_4) [above of=q_2] {$q_4$};
+  \node[state] (q_5) [above of=q_9] {$q_5$};
+  \node[state] (q_6) [below of=q_1] {$q_6$};
+  \node[state] (q_7) [below of=q_2] {$q_7$};
+  \node[state] (q_8) [below of=q_9] {$q_8$};
+  \node[state,accepting] (q_10) [right of=q_9] {$q_{10}$};
+
+  \path[->] (q_0) edge      [above]        node {$a, b$} (q_1)
+        (q_1) edge   [loop above]           node {$a, b$} (q_1)
+        (q_1) edge       [above]       node {$\varepsilon$} (q_2)
+        (q_2) edge [bend left=15]   [left]      node {$a$} (q_3)
+        (q_3) edge  [bend left=15]    [right]   node {$a$} (q_2)
+        (q_3) edge      [above]        node {$b$} (q_4)
+        (q_4) edge       [above]       node {$a$} (q_5)
+        (q_5) edge       [above]       node {$b$} (q_2)
+        (q_2) edge[bend left=15]   [right]        node {$b$} (q_6)
+        (q_6) edge[bend left=15]   [left]            node {$b$} (q_2)
+        (q_6) edge    [above]          node {$a$} (q_7)
+        (q_7) edge     [above]         node {$b$} (q_8)
+        (q_8) edge       [above]       node {$a$} (q_2)
+        (q_2) edge       [above]       node {$\varepsilon$} (q_9)
+        (q_9) edge  [loop above]             node {$a, b$} (q_9)
+        (q_9) edge       [above]       node {$a, b$} (q_10);
+  \end{myauto}
     \item Недетерминированный конечный автомат без $\varepsilon$-переходов
     \item Минимальный полный детерминированный конечный автомат
   \end{enumerate}
   \item Построить регулярное выражение, распознающее тот же язык, что и автомат:
-  \begin{myauto}
-    \node[state]           (q_2)                {$q_2$};
-    \node[state,initial]   (q_0) [left=of  q_2] {$q_0$};
-    \node[state]           (q_1) [above=of q_2] {$q_1$};
-    \node[state]           (q_3) [below=of q_2] {$q_3$};
-    \node[state,accepting] (q_4) [right=of q_2] {$q_4$};
-
-    \path[->] (q_0) edge [loop above] node [above] {$a, b, c$} ()
-                    edge              node [above] {$a$}       (q_1)
-                    edge              node [above] {$b$}       (q_2)
-                    edge              node [above] {$c$}       (q_3)
-              (q_1) edge [loop above] node [above] {$b, c$}    ()
-                    edge              node [above] {$a$}       (q_4)
-              (q_2) edge [loop above] node [above] {$a, c$}    ()
-                    edge              node [above] {$b$}       (q_4)
-              (q_3) edge [loop above] node [above] {$a, b$}    ()
-                    edge              node [above] {$c$}       (q_4)
-    ;
-  \end{myauto}
+  
   \item Определить, является ли автоматным язык $\{ \omega \omega^r \mid \omega \in \{ 0, 1 \}^* \}$. Если является --- построить автомат, иначе --- доказать.
   \item Определить, является ли автоматным язык $\{ u a a v \mid u, v \in \{ a, b \}^* , |u|_b \geq |v|_a \}$. Если является --- построить автомат, иначе --- доказать.
 \end{enumerate}
