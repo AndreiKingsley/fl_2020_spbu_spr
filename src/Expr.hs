@@ -1,9 +1,10 @@
-module Expr where
+﻿module Expr where
 
 import           AST         (AST (..), Operator (..))
-import           Combinators (Parser (..), Result (..), bind', elem', fail',
-                              fmap', satisfy, some', success)
+import           Combinators (Parser (..), Result (..), elem', fail',
+                              	 satisfy, symbol)
 import           Data.Char   (digitToInt, isDigit)
+import 		 Control.Applicative
 
 data Associativity
   = LeftAssoc  -- 1 @ 2 @ 3 @ 4 = (((1 @ 2) @ 3) @ 4)
@@ -16,31 +17,54 @@ uberExpr :: Monoid e
          -> Parser e i ast -- парсер для элементарного выражения
          -> (op -> ast -> ast -> ast) -- функция для создания абстрактного синтаксического дерева для бинарного оператора
          -> Parser e i ast
-uberExpr = error "uberExpr undefined"
+uberExpr ((p, assoc):xs) epsPars doAst = 
+	let rest = uberExpr xs epsPars doAst
+  	in case assoc of
+		LeftAssoc  -> do
+    	 		(first, arr) <- (,) <$> rest <*> (many ((,) <$> p <*> rest))
+   			return $ foldl (\acc (op, ast) -> doAst op acc ast) first arr
+  		RightAssoc -> do
+     		  	(arr, last) <- (,) <$> (many ((,) <$> rest <*> p)) <*> rest
+      			return $ foldr (\(ast, op) acc -> doAst op ast acc) last arr
+		NoAssoc    -> (do
+			ast1 <- rest
+			op   <- p
+     			ast2 <- rest
+                        return (doAst op ast1 ast2)) <|> rest
+uberExpr [] epsPars _ = epsPars
 
 -- Парсер для выражений над +, -, *, /, ^ (возведение в степень)
 -- с естественными приоритетами и ассоциативностью над натуральными числами с 0.
 -- В строке могут быть скобки
 parseExpr :: Parser String String AST
-parseExpr = error "parseExpr undefined"
+parseExpr = uberExpr
+		[(sumPars <|> minPars, LeftAssoc), (mulPars <|> divPars, LeftAssoc), (powPars, RightAssoc)]
+		(Num <$> parseNum <|> symbol '(' *> parseExpr <* symbol ')') 
+		BinOp
+	where 
+		sumPars = symbol '+' >>= toOperator
+		minPars = symbol '-' >>= toOperator
+		mulPars = symbol '*' >>= toOperator
+		divPars = symbol '/' >>= toOperator
+		powPars = symbol '^' >>= toOperator
 
 -- Парсер для натуральных чисел с 0
 parseNum :: Parser String String Int
-parseNum = foldl (\acc d -> 10 * acc + digitToInt d) 0 `fmap'` go
+parseNum = foldl (\acc d -> 10 * acc + digitToInt d) 0 <$> go
   where
     go :: Parser String String String
-    go = some' (satisfy isDigit)
+    go = some (satisfy isDigit)
 
 -- Парсер для операторов
 parseOp :: Parser String String Operator
-parseOp = elem' `bind'` toOperator
+parseOp = elem' >>= toOperator
 
 -- Преобразование символов операторов в операторы
 toOperator :: Char -> Parser String String Operator
-toOperator '+' = success Plus
-toOperator '*' = success Mult
-toOperator '-' = success Minus
-toOperator '/' = success Div
+toOperator '+' = return Plus
+toOperator '*' = return Mult
+toOperator '-' = return Minus
+toOperator '/' = return Div
 toOperator _   = fail' "Failed toOperator"
 
 evaluate :: String -> Maybe Int
