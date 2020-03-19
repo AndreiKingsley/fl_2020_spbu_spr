@@ -56,6 +56,16 @@ sepBy1 sep elem = (:) <$> elem <*> (many (sep *> elem))
 symbol :: Char -> Parser String String Char
 symbol c = satisfy (== c)
 
+-- Проверяет, что префикс входа -- данная строка
+stringParser :: String -> Parser String String String
+stringParser (x:xs) = (:) <$> satisfy (== x) <*> stringParser xs 
+stringParser [] = return [] 
+
+--Парсим строку из непустого словаря
+dictParser :: [String] -> Parser String String String
+dictParser [x] = stringParser x
+dictParser (x:xs) = stringParser x <|> dictParser xs
+
 -- Успешно завершается, если последовательность содержит как минимум один элемент
 elem' :: (Show a) => Parser String [a] a
 elem' = satisfy (const True)

@@ -2,7 +2,7 @@
 
 import           AST         (AST (..), Operator (..))
 import           Combinators (Parser (..), Result (..), elem', fail',
-                              	 satisfy, symbol)
+                              	 satisfy, symbol, stringParser, dictParser)
 import           Data.Char   (digitToInt, isDigit)
 import 		 Control.Applicative
 
@@ -37,16 +37,32 @@ uberExpr [] epsPars _ = epsPars
 -- с естественными приоритетами и ассоциативностью над натуральными числами с 0.
 -- В строке могут быть скобки
 parseExpr :: Parser String String AST
-parseExpr = uberExpr
-		[(sumPars <|> minPars, LeftAssoc), (mulPars <|> divPars, LeftAssoc), (powPars, RightAssoc)]
-		(Num <$> parseNum <|> symbol '(' *> parseExpr <* symbol ')') 
-		BinOp
+parseExpr = uberExpr [
+                      (orParser, RightAssoc),
+                      (andParser, RightAssoc),
+                      (equalParser <|> nequalParser <|> leParser <|> geParser <|> gtParser <|> ltParser, NoAssoc),
+                      (plusParser <|> minusParser, LeftAssoc),
+                      (multParser <|> divParser, LeftAssoc),
+                      (powParser, RightAssoc)
+                     ]
+                     (Num <$> parseNum <|> Ident <$> parseIdent <|> symbol '(' *> parseExpr <* symbol ')')
+                     BinOp
 	where 
-		sumPars = symbol '+' >>= toOperator
-		minPars = symbol '-' >>= toOperator
-		mulPars = symbol '*' >>= toOperator
-		divPars = symbol '/' >>= toOperator
-		powPars = symbol '^' >>= toOperator
+		plusParser    = stringParser "+" >>= toOperator
+		multParser    = stringParser "*" >>= toOperator
+		minusParser   = stringParser "-" >>= toOperator
+		divParser     = stringParser "/" >>= toOperator
+		powParser     = stringParser "^" >>= toOperator
+		equalParser   = stringParser "==" >>= toOperator
+		nequalParser  = stringParser "/=" >>= toOperator
+		gtParser      = stringParser ">" >>= toOperator
+		ltParser      = stringParser "<" >>= toOperator
+		geParser      = stringParser ">=" >>= toOperator
+		leParser      = stringParser "<=" >>= toOperator
+		andParser     = stringParser "&&" >>= toOperator
+		orParser      = stringParser "||" >>= toOperator
+	
+		
 
 
 -- Старый парсер без минуса
@@ -65,23 +81,43 @@ parseNum = Parser $ \input ->
                     Failure e -> Failure e 
         _        -> runParser parseNum' input
                    
-		
+	
+parseEngLetter :: Parser String String Char
+parseEngLetter = satisfy $ \x -> elem x (['a'..'z'] ++ ['A'..'Z']) 	
+
+parseDigit :: Parser String String Char
+parseDigit = satisfy isDigit
+
+parseUnderscore :: Parser String String Char
+parseUnderscore = satisfy (== '_')
 		
 parseIdent :: Parser String String String
-parseIdent = error "parseIdent undefined"
+parseIdent = do
+	firstSymbol <- parseEngLetter <|> parseUnderscore
+	rest <- many $ parseEngLetter <|> parseUnderscore <|> parseDigit
+	return $ firstSymbol : rest
 
+opList = ["+", "*", "-", "/", "^", "==", "/=", ">", ">=", "<", "<=", "&&", "||"]
 
 -- Парсер для операторов
 parseOp :: Parser String String Operator
-parseOp = elem' >>= toOperator
+parseOp = dictParser opList >>= toOperator
 
--- Преобразование символов операторов в операторы
-toOperator :: Char -> Parser String String Operator
-toOperator '+' = return Plus
-toOperator '*' = return Mult
-toOperator '-' = return Minus
-toOperator '/' = return Div
-toOperator '^' = return Pow
+-- Преобразование строк операторов в операторы
+toOperator :: String -> Parser String String Operator
+toOperator "+" = return Plus
+toOperator "*" = return Mult
+toOperator "-" = return Minus
+toOperator "/" = return Div
+toOperator "^" = return Pow
+toOperator "==" = return Equal
+toOperator "/=" = return Nequal
+toOperator ">" = return Gt
+toOperator ">=" = return Ge
+toOperator "<" = return Lt
+toOperator "<=" = return Le
+toOperator "&&" = return And
+toOperator "||" = return Or
 toOperator _   = fail' "Failed toOperator"
 
 evaluate :: String -> Maybe Int
