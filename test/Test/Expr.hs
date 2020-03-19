@@ -38,14 +38,6 @@ unit_parseNum = do
     assertBool "" $ isFailure (runParser parseNum "+3")
     assertBool "" $ isFailure (runParser parseNum "a")
 
-unit_parseExprWithNegNum :: Assertion
-unit_parseExprWithNegNum = do
-    runParser parseExpr "(-1)+2" @?= Success "" (BinOp Plus (Num (-1)) (Num 2))
-    runParser parseExpr "1*(-2)*3"   @?= Success "" (BinOp Mult (BinOp Mult (Num 1) (Num (-2))) (Num 3))
-    runParser parseExpr "-123"     @?= Success "" (Num (-123))
-    runParser parseExpr "(-1)-(-2)"  @?= Success "" (BinOp Minus (Num (-1)) (Num (-2)))
-	
-
 unit_parseNegNum1 :: Assertion
 unit_parseNegNum1 = do
     runParser parseNum "123" @?= Success "" 123
@@ -54,6 +46,14 @@ unit_parseNegNum1 = do
     assertBool "" $ isFailure $ runParser parseNum "+-3"
     assertBool "" $ isFailure $ runParser parseNum "-+3"
     assertBool "" $ isFailure $ runParser parseNum "-a"
+
+unit_parseExprWithNegNum :: Assertion
+unit_parseExprWithNegNum = do
+    runParser parseExpr "(-1)+2" @?= Success "" (BinOp Plus (Num (-1)) (Num 2))
+    runParser parseExpr "1*(-2)*3"   @?= Success "" (BinOp Mult (BinOp Mult (Num 1) (Num (-2))) (Num 3))
+    runParser parseExpr "-123"     @?= Success "" (Num (-123))
+    runParser parseExpr "(-1)-(-2)"  @?= Success "" (BinOp Minus (Num (-1)) (Num (-2)))
+    runParser parseExpr "-1-(-2)"  @?= Success "" (BinOp Minus (Num (-1)) (Num (-2)))
 
 unit_parseIdent :: Assertion
 unit_parseIdent = do
