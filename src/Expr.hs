@@ -48,13 +48,25 @@ parseExpr = uberExpr
 		divPars = symbol '/' >>= toOperator
 		powPars = symbol '^' >>= toOperator
 
--- Парсер для целых чисел
-parseNum :: Parser String String Int
-parseNum = foldl (\acc d -> 10 * acc + digitToInt d) 0 <$> go
+
+-- Старый парсер без минуса
+parseNum' :: Parser String String Int
+parseNum' = foldl (\acc d -> 10 * acc + digitToInt d) 0 <$> go
   where
     go :: Parser String String String
     go = some (satisfy isDigit)
-
+	
+-- Парсер для целых чисел
+parseNum :: Parser String String Int
+parseNum = Parser $ \input ->
+    case input of
+        ('-':xs) -> case runParser parseNum xs of
+                    Success i r -> Success i ((-1) * r)
+                    Failure e -> Failure e 
+        _        -> runParser parseNum' input
+                   
+		
+		
 parseIdent :: Parser String String String
 parseIdent = error "parseIdent undefined"
 
