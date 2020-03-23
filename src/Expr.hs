@@ -65,22 +65,10 @@ parseExpr = uberExpr [
 		
 
 
--- Старый парсер без минуса
-parseNum' :: Parser String String Int
-parseNum' = foldl (\acc d -> 10 * acc + digitToInt d) 0 <$> go
-  where
-    go :: Parser String String String
-    go = some (satisfy isDigit)
-	
 -- Парсер для целых чисел
 parseNum :: Parser String String Int
-parseNum = Parser $ \input ->
-    case input of
-        ('-':xs) -> case runParser parseNum xs of
-                    Success i r -> Success i ((-1) * r)
-                    Failure e -> Failure e 
-        _        -> runParser parseNum' input
-                   
+parseNum = ((\minuses num -> num * (-1) ^ (length minuses)) <$> many (symbol '-')) <*> (foldl (\acc d -> 10 * acc + digitToInt d) 0 <$> some (satisfy isDigit))
+
 	
 parseEngLetter :: Parser String String Char
 parseEngLetter = satisfy $ \x -> elem x (['a'..'z'] ++ ['A'..'Z']) 	
