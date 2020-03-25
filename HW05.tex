@@ -1,0 +1,99 @@
+\documentclass[12pt]{article}
+\usepackage[left=2cm,right=2cm,top=2cm,bottom=2cm,bindingoffset=0cm]{geometry}
+\usepackage[utf8x]{inputenc}
+\usepackage[english,russian]{babel}
+\usepackage{cmap}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{url}
+\usepackage{pifont}
+\usepackage{tikz}
+\usepackage{verbatim}
+\usepackage[most]{tcolorbox}
+
+\usetikzlibrary{shapes,arrows}
+\usetikzlibrary{positioning,automata}
+\tikzset{every state/.style={minimum size=0.2cm},
+initial text={}
+}
+
+\definecolor{block-gray}{gray}{0.90} 
+\newtcolorbox{myquote}{colback=block-gray,grow to right by=-10mm,grow to left by=-10mm,
+boxrule=0pt,boxsep=0pt,breakable} 
+
+\newenvironment{myauto}[1][3]
+{
+  \begin{center}
+    \begin{tikzpicture}[> = stealth,node distance=#1cm, on grid, very thick]
+}
+{
+    \end{tikzpicture}
+  \end{center}
+}
+
+
+\begin{document}
+\begin{center} {\LARGE Формальные языки, HW05} \end{center}
+
+\bigskip
+
+\begin{enumerate}
+\item[2.] \begin{myquote}
+$S \to RS|R$\\
+$R \to aSb|cRd|ab|cd|\epsilon$
+\end{myquote}
+Добавим новый начальный нетерминал
+ \begin{myquote}
+$S_0 \to S$\\
+$S \to RS|R$\\
+$R \to aSb|cRd|ab|cd|\epsilon$
+\end{myquote}
+Избавимся от неодиночных терминалов
+\begin{myquote}
+$S_0 \to S$\\
+$S \to RS|R$\\
+$R \to ASB|CRD|AB|CD|\epsilon$\\
+$A \to a$\\
+$B \to b$\\
+$C \to c$\\
+$D \to d$
+\end{myquote}
+Удаляем длинные правила
+\begin{myquote}
+$S_0 \to S$\\
+$S \to RS|R$\\
+$R \to AQ|CP|AB|CD|\epsilon$\\
+$A \to a$\\
+$B \to b$\\
+$C \to c$\\
+$D \to d$\\
+$Q \to SB$\\
+$P \to RD$
+\end{myquote}
+Элиминируем $\epsilon$-правила
+\begin{myquote}
+$S_0 \to S|\epsilon$\\
+$S \to RS|R|S$\\
+$R \to AQ|CP|AB|CD$\\
+$A \to a$\\
+$B \to b$\\
+$C \to c$\\
+$D \to d$\\
+$Q \to SB$\\
+$P \to RD|D$
+\end{myquote}
+Уничтожаем цепные правила\\
+\begin{myquote}
+$S_0 \to RS|AQ|CP|AB|CD|\epsilon$\\
+$S \to RS|AQ|CP|AB|CD$\\
+$R \to AQ|CP|AB|CD$\\
+$A \to a$\\
+$B \to b$\\
+$C \to c$\\
+$D \to d$\\
+$Q \to SB$\\
+$P \to RD|d$
+\end{myquote} -- НФХ.
+ \end{enumerate}
+
+\end{document}
