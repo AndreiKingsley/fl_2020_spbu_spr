@@ -1,0 +1,137 @@
+\documentclass[12pt]{article}
+\usepackage[left=2cm,right=2cm,top=2cm,bottom=2cm,bindingoffset=0cm]{geometry}
+\usepackage[utf8x]{inputenc}
+\usepackage[english,russian]{babel}
+\usepackage{cmap}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{url}
+\usepackage{pifont}
+\usepackage{tikz}
+\usepackage{verbatim}
+\usepackage[most]{tcolorbox}
+
+\usetikzlibrary{shapes,arrows}
+\usetikzlibrary{positioning,automata}
+\tikzset{every state/.style={minimum size=0.2cm},
+initial text={}
+}
+
+\definecolor{block-gray}{gray}{0.90} 
+\newtcolorbox{myquote}{colback=block-gray,grow to right by=-10mm,grow to left by=-10mm,
+boxrule=0pt,boxsep=0pt,breakable} 
+
+\newenvironment{myauto}[1][3]
+{
+  \begin{center}
+    \begin{tikzpicture}[> = stealth,node distance=#1cm, on grid, very thick]
+}
+{
+    \end{tikzpicture}
+  \end{center}
+}
+
+
+\begin{document}
+\begin{center} {\LARGE Язык древних русов} \end{center}
+
+\bigskip
+
+
+Для счёта древних русов используется служебный сивол $\$$, а сами цифры выглядат как
+\begin{enumerate}
+\item[0.] $\$NOL\$$
+\item $\$CELKOVIY\$$
+\item $\$POLUSHKA\$$
+\item $\$CHETVERTUSHKA\$$
+\item $\$OSMUSHKA\$$
+\item $\$PUDOVICHOK\$$
+\item $\$MEDYACHOK\$$
+\item $\$SEREBRYACHOK\$$
+\item $\$ZOLOTNICHOK\$$
+\item $\$DEVYATICHOK\$$
+\end{enumerate}
+
+Числа из них порожадются стандартно, обозначим число за $number$.\\
+
+
+Для логических значений выделен служебный сивол $?$ -- $?PRAVDA?$ и $?KRIVDA?$.\\
+Обозначим лог. занчение за $bool$.\\
+
+
+
+Идентификаторы -- слова из $['r', 'u', 's', 'R', 'U', 'S']$, причём сначала идут маленькие, затем заглавные символы:
+
+\begin{myquote}
+$S_0 \to @S@$\\
+$S \to' r'|'u'|'s'|'R'|'U'|'S'$\\
+$S \to (|'r'|'u'|'s')S$\\
+$S \to S('R'|'U'|'S')$
+\end{myquote}
+
+Примеры : $"@uuuURR@"$, $@SRU@$, $@rusRUS@$.
+Обозначим слово из языка этой грамматики за $ident$.
+Логический идентификатор $log_ident$ -- то же самое, только обособляется символом $!$.\\
+Каждый идентификатор соотвуетсвует одной глобальной переменной соответствующего типа. Изначально каждая переменная равна $0$ или $?KRIVDA?$.
+
+
+Введём понятие выражений -- $num\_expr$ и $log\_expr$.\\
+
+Операторы -- стандартные , со стандартными ассоциативностями/приоритетами. \\
+Но! Унарный минус выглядит как $\_-\_$ и их может быть сколько угодно, неассоциативен, имеет высший приоритет. Унарный плюс не предусмотрен.
+Разделим операторы на три типа $arithm\_op$ -- арифметические, $comp\_op$ -- операторы сравнение, $log\_op$ -- логические.\\
+
+Числовые выражения $num_expr$ строятся следующим образом:
+\begin{myquote}
+$S_0 \to :S:$\\
+$S \to number|ident|S\,arithm\_op\,S$
+\end{myquote}
+
+Пример: $:\$PUDOVICHOK\$ * (@ruu@ + @S@ * \$NOL\$):$\\
+
+Логические выражения $num_expr$ строятся следующим образом :
+\begin{myquote}
+$S_0 \to ;S;$\\
+$S \to bool|log\_ident|S\,log\_op\,S|num\_expr\,comp\_op\,num\_expr$
+\end{myquote}
+Пример: $;:\$PUDOVICHOK\$ * (@ruu@ + @S@ * \$NOL\$):||(!ruu! \&\& ?KRIVDA?);$\\
+
+
+Блоки кода должны начинать на служебный сивол $\{$ и заканчиваться на $\}$. Внутренность же должна начинаться на ключевое слово и быть в должной конструкции, задаваемой оным. Обозначим за $blok$.
+
+Ключевые слова -- обособляются служебным сиволов $\#$:
+\begin{itemize}
+\item $\#PUSTO\#$ -- пустой блок, кроме ключего слова ничего не должно быть.
+\item $\#ROBIT\#$. Синтаксис:\\
+$\#ROBIT\#blok1\;blok2\;blok3..$ -- выполняет последовательно блоки.
+\item $\#ZVYAZATI\#$ и $\#LOGZVYAZATI\#$. Синтаксис:\\
+$\#ZVYAZATI\#\;ident\;num\_expr$ и $\#LOGZVYAZATI\;log\_ident\;log\_expr$ -- кладёт в переменную значение данного выражения.
+\item $\#KOLI\#$, $\#TADI\#$, $\#PO-INOMU\#$. Синтаксис :\\
+ $\#KOLI\#\;log\_expr\;\#TADI\#\;blok\;\#PO-INOMU\#\; blok$ -- выполняет один из двух блоков, в зависимости от значения $log\_expr$.
+\item $\#PAKUL\#$. Синтаксис:\\
+$\#PAKUL\#\;log\_expr\;blok$ -- выполняет блока, пока верно условие $log\_expr$.
+\item $\#NAPISATNABERESTU\#$ и $\#LOGNAPISATNABERESTU\#$. Синтаксис:\\
+$\#NAPISATNABERESTU\# ident$ и $\#LOGNAPISATNABERESTU\# log\_ident$ -- выводит на бересту значение переменной.
+\end{itemize}
+
+Для корректности программы достаточно одно условие -- она начинается и заканичвается в одном блоке $\#ROBIT\#$
+
+Пример:
+$\{\#ROBIT\#\\
+\{\\ 
+\#ZVYAZATI\#@USSR@:\$CELKOVIY\$\$DEVYATICHOK\$\$DEVYATICHOK\$\$CELKOVIY\$+\_-\_\$CELKOVIY\$\$DEVYATICHOK\$\$POLUSHKA\$\$POLUSHKA\$:\\
+\}\\ 
+\{\\
+\#KOLI\#;@USSR@ >\$CELKOVIY\$ \$NOL\$ \$NOL\$;\\
+\#TADI\#\{\#LOGZVYAZATI\#!USSR!;?PRAVDA?;\}\\
+\#PO-INOMU\#\{\#PUSTO\#\}\} \\
+\}\\
+\{\\
+\#PAKUL\# ;!USSR!; \{\\
+\#NAPISATNABERESTE\#:\$NOL\$:\\
+\}\}\\
+\}$\\
+
+
+Ах да, все пробелы, табы и перенос строк в документации исключительно потому что тех не даёт делать иначе. В языке их нет.
+\end{document}
