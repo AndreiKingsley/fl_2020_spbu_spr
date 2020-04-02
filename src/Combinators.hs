@@ -1,4 +1,4 @@
-module Combinators where
+﻿module Combinators where
 
 import           Control.Applicative
 
@@ -90,7 +90,6 @@ satisfy :: Show a => (a -> Bool) -> Parser String [a] a
 satisfy p = Parser $ \input ->
   case input of
     (x:xs) | p x -> Success xs x
-    []           -> Failure $ "Empty string"
     _            -> Failure $ "Predicate failed"
 
 -- Успешно парсит пустую строку
