@@ -38,22 +38,14 @@ unit_parseNum = do
     assertBool "" $ isFailure (runParser parseNum "+3")
     assertBool "" $ isFailure (runParser parseNum "a")
 
-unit_parseNegNum :: Assertion
-unit_parseNegNum = do
-    runParser parseNum "123" @?= Success "" 123
-    runParser parseNum "-123" @?= Success "" (-123)
-    runParser parseNum "--123" @?= Success "" 123
-    assertBool "" $ isFailure $ runParser parseNum "+-3"
-    assertBool "" $ isFailure $ runParser parseNum "-+3"
-    assertBool "" $ isFailure $ runParser parseNum "-a"
 	
 unit_parseExprWithNegNum :: Assertion
 unit_parseExprWithNegNum = do
-    runParser parseExpr "(-1)+2" @?= Success "" (BinOp Plus (Num (-1)) (Num 2))
-    runParser parseExpr "1*(-2)*3"   @?= Success "" (BinOp Mult (BinOp Mult (Num 1) (Num (-2))) (Num 3))
-    runParser parseExpr "-123"     @?= Success "" (Num (-123))
-    runParser parseExpr "(-1)-(-2)"  @?= Success "" (BinOp Minus (Num (-1)) (Num (-2)))
-    runParser parseExpr "-1-(-2)"  @?= Success "" (BinOp Minus (Num (-1)) (Num (-2)))
+    runParser parseExpr "(-1)+2" @?= Success "" (BinOp Plus (UnaryOp Minus (Num 1)) (Num 2))
+    runParser parseExpr "1*(-2)*3"   @?= Success "" (BinOp Mult (BinOp Mult (Num 1) (UnaryOp Minus (Num 2))) (Num 3))
+    runParser parseExpr "-123"     @?= Success "" (UnaryOp Minus (Num 123))
+    runParser parseExpr "(-1)-(-2)"  @?= Success "" (BinOp Minus (UnaryOp Minus (Num 1)) (UnaryOp Minus (Num 2)))
+    runParser parseExpr "-1-(-2)"  @?= Success "" (BinOp Minus (UnaryOp Minus (Num 1)) (UnaryOp Minus (Num 2)))
 
 unit_parseIdent :: Assertion
 unit_parseIdent = do
@@ -103,8 +95,10 @@ unit_parseExpr = do
     runParser parseExpr "1||x" @?= Success "" (BinOp Or (Num 1) (Ident "x"))
     runParser parseExpr "(1==x+2)||3*4<y-5/6&&(7/=z^8)||(id>12)&&abc<=13||xyz>=42" @?=
       runParser parseExpr "(1==(x+2))||(((3*4)<(y-(5/6))&&(7/=(z^8)))||(((id>12)&&(abc<=13))||(xyz>=42)))"
+ 
 
 unit_unaryEpxr = do
+    runParser parseExpr "!1"     @?= Success "" (UnaryOp Not (Num 1))
     runParser parseExpr "-1+2" @?= Success "" (BinOp Plus (UnaryOp Minus (Num 1)) (Num 2))
     runParser parseExpr "-1*2" @?= Success "" (BinOp Mult (UnaryOp Minus (Num 1)) (Num 2))
     runParser parseExpr "-1==2" @?= Success "" (BinOp Equal (UnaryOp Minus (Num 1)) (Num 2))

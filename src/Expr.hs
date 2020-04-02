@@ -20,37 +20,42 @@ uberExpr :: Monoid e
          -> (op -> ast -> ast -> ast) -- конструктор узла дерева для бинарной операции
          -> (op -> ast -> ast)        -- конструктор узла для унарной операции
          -> Parser e i ast
-uberExpr ((p, assoc):xs) epsPars doAst = 
-	let rest = uberExpr xs epsPars doAst
-  	in case assoc of
-		LeftAssoc  -> do
-    	 		(first, arr) <- (,) <$> rest <*> (many ((,) <$> p <*> rest))
-   			return $ foldl (\acc (op, ast) -> doAst op acc ast) first arr
-  		RightAssoc -> do
-     		  	(arr, last) <- (,) <$> (many ((,) <$> rest <*> p)) <*> rest
-      			return $ foldr (\(ast, op) acc -> doAst op ast acc) last arr
-		NoAssoc    -> (do
-			ast1 <- rest
-			op   <- p
-     			ast2 <- rest
-                        return (doAst op ast1 ast2)) <|> rest
-uberExpr [] epsPars _ = epsPars
-
+uberExpr ((p, assoc):xs) epsPars doBin doUn=
+  let rest = uberExpr xs epsPars doBin doUn
+  in case assoc of
+    Unary             -> doUn <$> p <*> rest <|> rest
+    Binary LeftAssoc  -> do
+        (first, last) <- (,) <$> rest <*> (many ((,) <$> p <*> rest))
+        return $ foldl (\acc (op, ast) -> doBin op acc ast) first last
+      <|> rest
+    Binary RightAssoc -> do
+        (first, last) <- (,) <$> (many ((,) <$> rest <*> p)) <*> rest
+        return $ foldr (\(ast, op) acc -> doBin op ast acc) last first
+      <|> rest
+    Binary NoAssoc    -> do
+        ast1 <- rest
+        op <- p
+        ast2 <- rest
+        return $ doBin op ast1 ast2
+      <|> rest
+uberExpr [] epsPars _ _ = epsPars
 
 -- Парсер для выражений над +, -, *, /, ^ (возведение в степень)
 -- с естественными приоритетами и ассоциативностью над натуральными числами с 0.
 -- В строке могут быть скобки
 parseExpr :: Parser String String AST
 parseExpr = uberExpr [
-                      (orParser, RightAssoc),
-                      (andParser, RightAssoc),
-                      (equalParser <|> nequalParser <|> leParser <|> geParser <|> gtParser <|> ltParser, NoAssoc),
-                      (plusParser <|> minusParser, LeftAssoc),
-                      (multParser <|> divParser, LeftAssoc),
-                      (powParser, RightAssoc)
+                      (orParser, Binary RightAssoc),
+                      (andParser, Binary RightAssoc),
+                      (notParser, Unary),
+                      (equalParser <|> nequalParser <|> leParser <|> geParser <|> gtParser <|> ltParser, Binary NoAssoc),
+                      (plusParser <|> minusParser, Binary LeftAssoc),
+                      (multParser <|> divParser, Binary LeftAssoc),
+		      (minusParser, Unary),
+                      (powParser, Binary RightAssoc)
                      ]
                      (Num <$> parseNum <|> Ident <$> parseIdent <|> symbol '(' *> parseExpr <* symbol ')')
-                     BinOp
+                     BinOp UnaryOp
 	where 
 		plusParser    = stringParser "+" >>= toOperator
 		multParser    = stringParser "*" >>= toOperator
@@ -65,10 +70,12 @@ parseExpr = uberExpr [
 		leParser      = stringParser "<=" >>= toOperator
 		andParser     = stringParser "&&" >>= toOperator
 		orParser      = stringParser "||" >>= toOperator
+		notParser     = stringParser "!" >>= toOperator
+		
 
--- Парсер для целых чисел
+-- Парсер для целых неотрицательных чисел
 parseNum :: Parser String String Int
-parseNum = ((\minuses num -> num * (-1) ^ (length minuses)) <$> many (symbol '-')) <*> (foldl (\acc d -> 10 * acc + digitToInt d) 0 <$> some (satisfy isDigit))
+parseNum = foldl (\acc d -> 10 * acc + digitToInt d) 0 <$> some (satisfy isDigit)
 
 
 parseEngLetter :: Parser String String Char
@@ -86,7 +93,7 @@ parseIdent = do
 	rest <- many $ parseEngLetter <|> parseUnderscore <|> parseDigit
 	return $ firstSymbol : rest
 
-opList = ["+", "*", "-", "/", "^", "==", "/=", ">", ">=", "<", "<=", "&&", "||"]
+opList = ["+", "*", "-", "/", "^", "==", "/=", ">", ">=", "<", "<=", "&&", "||", "!"]
 
 -- Парсер для операторов
 parseOp :: Parser String String Operator
@@ -107,6 +114,7 @@ toOperator "<" = return Lt
 toOperator "<=" = return Le
 toOperator "&&" = return And
 toOperator "||" = return Or
+toOperator "!" = return Not
 toOperator _   = fail' "Failed toOperator"
 
 evaluate :: String -> Maybe Int
