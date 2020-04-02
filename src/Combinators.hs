@@ -11,28 +11,43 @@ newtype Parser error input result
   = Parser { runParser :: input -> Result error input result }
 
 instance Functor (Parser error input) where
-  fmap = error "fmap not implemented"
+  fmap f p = Parser $ \input ->
+  	case runParser p input of
+        	Success i r -> Success i (f r)
+         	Failure e   -> Failure e
 
 instance Applicative (Parser error input) where
-  pure = error "pure not implemented"
-  (<*>) = error "<*> not implemented"
+  pure x = Parser $ \input -> Success input x
+
+  p1 <*> p2 = Parser $ \input -> 
+	case runParser p1 input of
+		Failure e    -> Failure e
+		Success i rf -> case runParser p2 i of
+			Success i' r' -> Success i' (rf r')
+			Failure e     -> Failure e
 
 instance Monad (Parser error input) where
-  return = error "return not implemented"
+  return x = Parser $ \input -> Success input x
 
-  (>>=) = error ">>= not implemented"
+  p >>= f = Parser $ \input ->
+  	case runParser p input of
+    		Success i r -> runParser (f r) i
+    		Failure e   -> Failure e
 
 instance Monoid error => Alternative (Parser error input) where
-  empty = error "empty not implemented"
+  empty = Parser $ \i -> Failure mempty
 
-  (<|>) = error "<|> not implemented"
+  p <|> q = Parser $ \input -> 
+	case runParser p input of
+		Failure _ -> runParser q input                 
+		x         -> x		
 
 -- Принимает последовательность элементов, разделенных разделителем
 -- Первый аргумент -- парсер для разделителя
 -- Второй аргумент -- парсер для элемента
 -- В последовательности должен быть хотя бы один элемент
-sepBy1 :: Parser e i sep -> Parser e i a -> Parser e i [a]
-sepBy1 sep elem = error "sepBy1 not implemented"
+sepBy1 :: Monoid e => Parser e i sep -> Parser e i a -> Parser e i [a]
+sepBy1 sep elem = (:) <$> elem <*> (many (sep *> elem))
 
 -- Альтернатива: в случае неудачи разбора первым парсером, парсит вторым
 alt' :: Parser e i a -> Parser e i a -> Parser e i a
@@ -56,6 +71,16 @@ bind' p f = Parser $ \input ->
 symbol :: Char -> Parser String String Char
 symbol c = satisfy (== c)
 
+-- Проверяет, что префикс входа -- данная строка
+stringParser :: String -> Parser String String String
+stringParser (x:xs) = (:) <$> satisfy (== x) <*> stringParser xs 
+stringParser [] = return [] 
+
+--Парсим строку из непустого словаря
+dictParser :: [String] -> Parser String String String
+dictParser [x] = stringParser x
+dictParser (x:xs) = stringParser x <|> dictParser xs
+
 -- Успешно завершается, если последовательность содержит как минимум один элемент
 elem' :: (Show a) => Parser String [a] a
 elem' = satisfy (const True)
@@ -66,35 +91,13 @@ satisfy p = Parser $ \input ->
   case input of
     (x:xs) | p x -> Success xs x
     []           -> Failure $ "Empty string"
-    (x:xs)       -> Failure $ "Predicate failed"
+    _            -> Failure $ "Predicate failed"
 
 -- Успешно парсит пустую строку
 epsilon :: Parser e i ()
-epsilon = success ()
-
--- Всегда завершается успехом, вход не читает, возвращает данное значение
-success :: a -> Parser e i a
-success a = Parser $ \input -> Success input a
+epsilon = return ()
 
 -- Всегда завершается ошибкой
 fail' :: e -> Parser e i a
 fail' = Parser . const . Failure
 
--- Проверяет, что первый элемент входной последовательности -- данный символ
-fmap' :: (a -> b) -> Parser e i a -> Parser e i b
-fmap' f p = Parser $ \input ->
-  case runParser p input of
-    Success i a -> Success i (f a)
-    Failure e   -> Failure e
-
--- Последовательное применения одного и того же парсера 1 или более раз
-some' :: Parser e i a -> Parser e i [a]
-some' p =
-  p `bind'` \a ->
-  many' p `bind'` \as ->
-  success (a : as)
-
--- Последовательное применение одного и того же парсера 0 или более раз
-many' :: Parser e i a -> Parser e i [a]
-many' p =
-  some' p `alt'` success []

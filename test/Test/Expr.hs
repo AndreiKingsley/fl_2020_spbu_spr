@@ -2,7 +2,7 @@ module Test.Expr where
 
 import           AST                 (AST (..), Operator (..))
 import           Combinators         (Parser (..), Result (..), runParser,
-                                      symbol)
+                                      symbol, stringParser)
 import           Control.Applicative ((<|>))
 import           Expr                (Associativity (..), evaluate, parseExpr,
                                       parseNum, parseOp, toOperator, uberExpr, parseIdent, OpType (..))
@@ -46,6 +46,14 @@ unit_parseNegNum = do
     assertBool "" $ isFailure $ runParser parseNum "+-3"
     assertBool "" $ isFailure $ runParser parseNum "-+3"
     assertBool "" $ isFailure $ runParser parseNum "-a"
+	
+unit_parseExprWithNegNum :: Assertion
+unit_parseExprWithNegNum = do
+    runParser parseExpr "(-1)+2" @?= Success "" (BinOp Plus (Num (-1)) (Num 2))
+    runParser parseExpr "1*(-2)*3"   @?= Success "" (BinOp Mult (BinOp Mult (Num 1) (Num (-2))) (Num 3))
+    runParser parseExpr "-123"     @?= Success "" (Num (-123))
+    runParser parseExpr "(-1)-(-2)"  @?= Success "" (BinOp Minus (Num (-1)) (Num (-2)))
+    runParser parseExpr "-1-(-2)"  @?= Success "" (BinOp Minus (Num (-1)) (Num (-2)))
 
 unit_parseIdent :: Assertion
 unit_parseIdent = do
@@ -116,10 +124,10 @@ unit_unaryEpxr = do
     assertBool "" $ isFailure $ runParser parseExpr "--1"
     assertBool "" $ isFailure $ runParser parseExpr "-!1"
 
-mult  = symbol '*' >>= toOperator
-sum'  = symbol '+' >>= toOperator
-minus = symbol '-' >>= toOperator
-div'  = symbol '/' >>= toOperator
+mult  = stringParser "*" >>= toOperator
+sum'  = stringParser "+" >>= toOperator
+minus = stringParser "-" >>= toOperator
+div'  = stringParser "/" >>= toOperator
 
 expr1 :: Parser String String AST
 expr1 =
