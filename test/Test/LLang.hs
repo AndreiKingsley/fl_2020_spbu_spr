@@ -44,3 +44,5 @@ unit_parseLExpr = do
 unit_parseL :: Assertion
 unit_parseL = do
    runParser parseL "{#ROBIT#{#PUSTO#}}" @?= Success "" Seq {statements = [Empty]}
+   runParser parseL "{#ROBIT#{#ZVYAZATI#@ruSS@:$CELKOVIY$*$POLUSHKA$*$CHETVERTUSHKA$:}{#PAKUL#:$NOL$:{#ROBIT#{#NAPISATNABERESTU#:-@ruSS@:}}}}"
+	@?= Success "" Seq {statements = [Assign {var = "ruSS", expr = (BinOp Mult (BinOp Mult (Num 1) (Num 2)) (Num 3))}, While {cond = (Num 0), body = Seq{statements = [Write {expr = (UnaryOp Minus (Ident "ruSS"))}]}}]}
