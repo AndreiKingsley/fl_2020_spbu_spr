@@ -93,7 +93,6 @@ data LAst
   | Read { var :: Var }
   | Write { expr :: Expr }
   | Seq { statements :: [LAst] }
-  | Empty 
   deriving (Show, Eq)
 
 
@@ -160,7 +159,7 @@ parseEmpty = do
     	symbol '{'
 	stringParser "#PUSTO#"
 	symbol '}'
-    	return Empty
+    	return Seq {statements = []}
 
 
 parseBlock :: Parser String String LAst
