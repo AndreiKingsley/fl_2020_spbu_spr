@@ -1,7 +1,8 @@
 module LLang where
 
-import           AST         (AST (..), Operator (..), Subst (..))
-import           Combinators (Parser (..))
+import           AST         
+import           Combinators
+import           Expr 
 import           Data.List   (intercalate)
 import qualified Data.Map    as Map
 import           Text.Printf (printf)
@@ -33,14 +34,43 @@ parseL = error "parseL undefined"
 parseDef :: Parser String String Function
 parseDef = error "parseDef undefined"
 
-parseProg :: Parser String String Prog
+parseProg :: Parser String String Program
 parseProg = error "parseProg undefined"
 
 initialConf :: [Int] -> Configuration
 initialConf input = Conf Map.empty input []
 
 eval :: LAst -> Configuration -> Maybe Configuration
-eval = error "eval not defined"
+eval block conf@(Conf subst input output) = case block of
+
+	(If cond thn els) -> case evalExpr subst cond of
+		Just 0 -> eval els conf
+		Nothing -> Nothing
+		_ -> eval thn conf
+
+	(While cond body) -> case evalExpr subst cond of
+		Nothing -> Nothing
+		Just 0 -> Just conf
+		_ -> case eval body conf of
+			Just conf' -> eval block conf'
+			_ -> Nothing
+
+	(Assign var expr) -> case evalExpr subst expr of
+		Just x -> Just $ Conf (Map.insert var x subst) input output
+		_ -> Nothing
+
+	(Read var) -> case input of
+		x:xs -> Just $ Conf (Map.insert var x subst) xs output
+		_ -> Nothing
+
+	(Write expr) -> case evalExpr subst expr of
+		Just x -> Just $ Conf subst input (x:output)
+		_ -> Nothing
+
+	(Seq []) -> Just conf
+	(Seq (b:bs)) -> case eval b conf of
+		Just conf' -> eval (Seq bs) conf'
+		_ -> Nothing 
 
 instance Show Function where
   show (Function name args funBody) =

@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleInstances #-}
+﻿{-# LANGUAGE FlexibleInstances #-}
 
 module Combinators where
 
@@ -35,16 +35,29 @@ incrPos :: InputStream a -> InputStream a
 incrPos (InputStream str pos) = InputStream str (pos + 1)
 
 instance Functor (Parser error input) where
-  fmap = error "fmap not implemented"
+  fmap f (Parser p) = Parser $ \input ->
+  	case (p input) of
+        	Success i r -> Success i (f r)
+         	Failure e   -> Failure e
 
 instance Applicative (Parser error input) where
-  pure = error "pure not implemented"
-  (<*>) = error "<*> not implemented"
+  pure x = Parser $ \input -> Success input x
+
+  (Parser p1) <*> (Parser p2) = Parser $ \input -> 
+	case (p1 input) of
+		Failure e    -> Failure e
+		Success i rf -> case (p2 i) of
+			Success i' r' -> Success i' (rf r')
+			Failure e     -> Failure e
 
 instance Monad (Parser error input) where
-  return = error "return not implemented"
+  return x = Parser $ \input -> Success input x
 
-  (>>=) = error ">>= not implemented"
+  (Parser p) >>= f = Parser $ \input ->
+  	case (p input) of
+    		Success i r -> runParser' (f r) i
+    		Failure e   -> Failure e
+
 
 instance Monoid error => Alternative (Parser error input) where
   empty = Parser $ \input -> Failure [makeError mempty (curPos input)]
@@ -80,6 +93,16 @@ infixl 1 <?>
 symbol :: Char -> Parser String String Char
 symbol c = ("Expected symbol: " ++ show c) <?> satisfy (== c)
 
+-- Проверяет, что префикс входа -- данная строка
+stringParser :: String -> Parser String String String
+stringParser (x:xs) = (:) <$> satisfy (== x) <*> stringParser xs 
+stringParser [] = return [] 
+
+--Парсим строку из непустого словаря
+dictParser :: [String] -> Parser String String String
+dictParser [x] = stringParser x
+dictParser (x:xs) = stringParser x <|> dictParser xs
+
 eof :: Parser String String ()
 eof = Parser $ \input -> if null $ stream input then Success input () else Failure [makeError "Not eof" (curPos input)]
 
@@ -92,11 +115,7 @@ satisfy p = Parser $ \(InputStream input pos) ->
 
 -- Успешно парсит пустую строку
 epsilon :: Parser e i ()
-epsilon = success ()
-
--- Всегда завершается успехом, вход не читает, возвращает данное значение
-success :: a -> Parser e i a
-success a = Parser $ \input -> Success input a
+epsilon = return ()
 
 -- Всегда завершается ошибкой
 fail' :: e -> Parser e i a
