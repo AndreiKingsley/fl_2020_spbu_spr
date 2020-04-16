@@ -15,9 +15,11 @@ type Var = String
 data Configuration = Conf { subst :: Subst, input :: [Int], output :: [Int] }
                    deriving (Show, Eq)
 
-data Program = Program { functions :: [Function], main :: LAst }
+data Program = Program { functions :: [Function], main :: LAst } 
+	deriving (Eq)
 
-data Function = Function { name :: String, args :: [Var], funBody :: LAst }
+data Function = Function { name :: String, args :: [Var], funBody :: LAst } 
+	deriving (Eq)
 
 data LAst
   = If { cond :: Expr, thn :: LAst, els :: LAst }
@@ -177,8 +179,8 @@ parseReturn :: Parser String String LAst
 parseReturn = do
     	symbol '{'
 	stringParser "#VIDDAI#"
+	expr <- parseLExpr
 	symbol '}'
-	expr <- parseExpr
     	return $ Return expr 
 
 
@@ -202,7 +204,7 @@ parseFunName = do
 parseFunArg :: Parser String String String
 parseFunArg = do
 	symbol '('
-	ident <- parseIdent
+	ident <- parseLIdent
 	symbol ')'
 	return $ ident
 
@@ -210,7 +212,6 @@ parseDef :: Parser String String Function
 parseDef = do
 	symbol '{'
 	stringParser "#VIZNACH#"
-	symbol '}'
 	name <- parseFunName
 	args <- many $ parseFunArg
 	body <- parseSeq

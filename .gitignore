@@ -6,3 +6,5 @@ fl2020-spbu-spr.cabal
 stack.yaml
 
 stack.yaml.lock
+
+*.synctex.gz
