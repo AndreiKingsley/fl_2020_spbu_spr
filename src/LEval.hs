@@ -2,6 +2,7 @@ module LEval where
 
 import qualified Data.Map    as Map
 import LLang 
+import Combinators
 
 evalProg :: Program -> [Int] -> Maybe Configuration
 evalProg (Program funcs main) input = eval main
@@ -14,4 +15,6 @@ evalProg (Program funcs main) input = eval main
 		
 
 parseAndEvalProg :: String -> [Int] -> Maybe Configuration
-parseAndEvalProg = error "parseAndEvalProg not implemented"
+parseAndEvalProg progStr input = case runParser parseProg progStr  of
+    Success (InputStream _ _) prog -> evalProg prog input
+    otherwise -> Nothing
