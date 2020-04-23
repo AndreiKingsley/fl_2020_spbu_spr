@@ -43,4 +43,4 @@ unit_parseProg = do
 unit_evalFunction :: Assertion
 unit_evalFunction = do
 	let f = Function "f" ["x", "y"] (Read "z") (BinOp Plus (Ident "x") (BinOp Mult (Ident "z") (Ident "y")))
-	evalFunction f [2, 3] (Conf Map.empty [1] [] Map.empty) @?= Just((Conf Map.empty [] [] Map.empty), 4)
+	evalFunction f [2, 3] (Conf Map.empty [1] [] Map.empty) @?= Just((Conf Map.empty [] [] Map.empty), 5)

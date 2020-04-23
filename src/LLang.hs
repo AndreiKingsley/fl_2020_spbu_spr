@@ -298,11 +298,13 @@ evalLExpr conf (UnaryOp Not x)= do
 evalLExpr conf (UnaryOp Minus x)    = do
 	(conf', a)  <- evalLExpr conf  x 
 	return (conf', (-1) * a)
-evalLexpr conf (FunctionCall name vals)= do
+evalLExpr conf (FunctionCall name vals)= do
 	(conf', argVals) <- evalFunArgs conf vals
 	func <- Map.lookup name (defs conf')
 	(conf'', a) <- evalFunction func argVals conf'
 	return (conf'', a)
+
+
 
 evalFunArgs :: Configuration -> [AST] -> Maybe (Configuration, [Int])
 evalFunArgs conf [] = Just(conf, [])
