@@ -80,7 +80,11 @@ parseLExpr = do
 	symbol ':'
         return ast
 
-
+parseFunctionCall :: Parser String String AST
+parseFunctionCall = do
+	name <- parseFunName
+	args <- many $ Ident <$> parseFunArg
+	return $ FunctionCall name args
 
 helper = uberExpr [
                       (orParser, Binary RightAssoc),
@@ -92,7 +96,7 @@ helper = uberExpr [
 		      (minusParser, Unary),
                       (powParser, Binary RightAssoc)
                      ]
-                     (Num <$> parseLNum <|> Ident <$> parseLIdent <|> symbol '(' *> parseLExpr <* symbol ')')
+                     (Num <$> parseLNum <|> Ident <$> parseLIdent <|> symbol '(' *> parseLExpr <* symbol ')' <|> parseFunctionCall)
                      BinOp UnaryOp
 	where 
 		plusParser    = stringParser "+" >>= toOperator
