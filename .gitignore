@@ -16,3 +16,15 @@ src/SimpleLex.hs
 stack.yaml
 
 stack.yaml.lock
+
+python_parser/parser.out
+
+python_parser/parsetab.py
+
+python_parser/.idea
+
+python_parser/__pycache__
+
+python_parser/rules
+
+
