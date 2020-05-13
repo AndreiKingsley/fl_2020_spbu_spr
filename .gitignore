@@ -5,3 +5,5 @@
 stack.yaml
 
 stack.yaml.lock
+
+*.synctex.gz
