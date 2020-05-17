@@ -8,7 +8,7 @@ def test_1():
     assert not error
     assert nonterm_list == {'<S>'}
     assert term_list == {'"a"'}
-    assert rules == {'<S>': ['"a"', '<S>']}
+    assert rules == {'<S>': [['"a"'], ['<S>']]}
 
 
 def test_2():
@@ -17,7 +17,7 @@ def test_2():
     assert not error
     assert nonterm_list == {'<S>', '<R>'}
     assert term_list == {'"ab"'}
-    assert rules == {'<S>': ['"ab"', '<R>', '_'], '<R>': ['<S>']}
+    assert rules == {'<S>': [['"ab"'], ['<R>'], ['_']], '<R>': [['<S>']]}
 
 
 def test_error1():
@@ -38,7 +38,16 @@ def test_multidef():
     assert not error
     assert nonterm_list == {'<S>', '<T>'}
     assert term_list == {'"a"', '"b"'}
-    assert rules == {'<S>': ['"a"', '"b"', '<T>']}
+    assert rules == {'<S>': [['"a"'], ['"b"'], ['<T>']]}
+
+
+def test_pcp():
+    txt = '<S> -> "a"<S>"b"<S> | _\n'
+    term_list, nonterm_list, rules, error = parse(txt)
+    assert not error
+    assert nonterm_list == {'<S>'}
+    assert term_list == {'"a"', '"b"'}
+    assert rules == {'<S>': [['"a"', '<S>', '"b"', '<S>'], ['_']]}
 
 
 if __name__ == '__main__':

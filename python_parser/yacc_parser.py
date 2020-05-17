@@ -37,15 +37,26 @@ rules = defaultdict(list)
 
 
 def p_one_rule(p):
-    '''rule : NONTERM ARROW rhs N'''
+    '''rule : NONTERM ARROW seq N'''
     nonterm_list.add(p[1])
     rules[p[1]] += (p[3])
 
 
 def p_many_rules(p):
-    '''rule : NONTERM ARROW rhs N rule'''
+    '''rule : NONTERM ARROW seq N rule'''
     nonterm_list.add(p[1])
     rules[p[1]] += (p[3])
+
+
+def p_single_seq(p):
+    '''seq : rhs'''
+    p[0] = [p[1]]
+
+
+def p_multiple_seq(p):
+    '''seq : seq VBAR rhs'''
+    p[0] = p[1].copy()
+    p[0].append(p[3])
 
 
 def p_single_term(p):
@@ -69,23 +80,23 @@ def p_single_eps(p):
 
 
 def p_rhs_eps(p):
-    '''rhs : rhs VBAR EPS'''
+    '''rhs : rhs EPS'''
     p[0] = p[1].copy()
-    p[0].append(p[3])
+    p[0].append(p[2])
 
 
 def p_rhs_term(p):
-    '''rhs : rhs VBAR TERM'''
-    term_list.add(p[3])
+    '''rhs : rhs TERM'''
+    term_list.add(p[2])
     p[0] = p[1].copy()
-    p[0].append(p[3])
+    p[0].append(p[2])
 
 
 def p_rhs_nonterm(p):
-    '''rhs : rhs VBAR NONTERM'''
-    nonterm_list.add(p[3])
+    '''rhs : rhs NONTERM'''
+    nonterm_list.add(p[2])
     p[0] = p[1].copy()
-    p[0].append(p[3])
+    p[0].append(p[2])
 
 
 def p_error(p):
@@ -101,15 +112,21 @@ def parse(s):
     rules.clear()
     error = False
     yacc.parse(s)
-    return term_list, nonterm_list, normalize_rules(rules), error
+    return term_list, nonterm_list, unique_dict(rules), error
 
 
 parser = yacc.yacc()
 
 
-def normalize_rules(rules):
-    new_rules = defaultdict(list)
-    for k, val in rules.items():
-        val_set = set(val)
-        new_rules[k] = sorted(list(val_set))
-    return new_rules
+def unique_list(l):
+    ans = []
+    for elem in l:
+        if not (elem in ans):
+            ans.append(elem)
+    return ans
+
+
+def unique_dict(dict):
+    for k, val in dict.items():
+        dict[k] = sorted(unique_list(val))
+    return dict
